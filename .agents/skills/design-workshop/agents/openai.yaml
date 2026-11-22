@@ -1,0 +1,6 @@
+interface:
+  display_name: Design Workshop
+  short_description: Guide human-led software design
+  default_prompt: Use $design-workshop to help me work through a software design.
+policy:
+  allow_implicit_invocation: false

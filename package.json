@@ -1,0 +1,51 @@
+{
+  "name": "shinba",
+  "version": "1.0.0",
+  "description": "**Understand before you ship. A visual-first code editor built for responsible software design with coding agents.**",
+  "main": "app/main/main.cjs",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "node scripts/prepare-terminal.cjs && concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && VITE_URL=http://127.0.0.1:5173 electron .\"",
+    "build": "vite build",
+    "start": "node scripts/prepare-terminal.cjs && electron .",
+    "package:mac": "npm run build && electron-packager . shinba --platform=darwin --arch=arm64 --out=release --no-asar --icon=assets/shinba.icns --app-bundle-id=com.ikrfun.shinba --ignore=\"^/(\\.git|\\.shinba|\\.agents|docs|tests|release|build)(/|$)\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikrfun/shinba.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ikrfun/shinba/issues"
+  },
+  "homepage": "https://github.com/ikrfun/shinba#readme",
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@vscode/codicons": "^0.0.46-24",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "@xyflow/react": "^12.12.1",
+    "monaco-editor": "^0.57.0",
+    "monaco-vim": "^0.4.4",
+    "node-pty": "^1.1.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "5.9",
+    "typescript-language-server": "^6.1.0",
+    "vscode-jsonrpc": "^10.0.1"
+  },
+  "private": true,
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "concurrently": "^10.0.7",
+    "electron": "^45.4.1",
+    "prettier": "^3.10.1",
+    "vite": "^8.3.8",
+    "wait-on": "^9.5.1"
+  }
+}

@@ -21,6 +21,15 @@ coding agent に実装を丸投げ（vibe coding）すればコードは素早�
 
 ---
 
+## 設計資料
+
+- [コンセプトと要件](docs/concept-and-requirements.md)
+- [試作の引き継ぎ](docs/prototype-handoff.md)
+
+これらの資料では、これまでに検討した内容と未決事項を整理しています。README の技術・機能の記述は、今後の設計で採用状況を確認します。
+
+---
+
 ## Why "shinba"?
 
 名前の由来は、法隆寺の五重塔など日本の伝統建築の中心を貫く大柱**「心柱（しんばしら / Shinbashira）」**です。
