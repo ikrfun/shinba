@@ -14,13 +14,17 @@ test("rejects changed files and preserves external edits", async () => {
           handlers[name] = fn;
         },
       },
-      inside: (p) => path.join(dir, p),
+      inside: (p = '') => path.resolve(dir, p),
     });
     await fs.writeFile(path.join(dir, "test.txt"), "external");
     await assert.rejects(
       handlers["file:write"](null, "test.txt", "local", "original"),
       /changed externally/,
     );
+    await fs.writeFile(path.join(dir, 'pixel.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
+    assert.match(await handlers['file:read-image'](null, 'pixel.png'), /^data:image\/png;base64,/);
+    await assert.rejects(handlers['file:read-image'](null, '../outside.png'));
+    await assert.rejects(handlers['file:read-image'](null, 'test.txt'), /Unsupported image format/);
     assert.equal(
       await fs.readFile(path.join(dir, "test.txt"), "utf8"),
       "external",

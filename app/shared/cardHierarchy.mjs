@@ -26,9 +26,12 @@ function absolutePosition(node, byId) {
   return { x, y };
 }
 
-export function canNest(nodes, childId, parentId) {
+export function createHierarchyIndex(nodes) {
+  return new Map(nodes.map((node) => [node.id, node]));
+}
+
+export function canNestInIndex(byId, childId, parentId) {
   if (!parentId) return true;
-  const byId = new Map(nodes.map((node) => [node.id, node]));
   if (!byId.has(childId) || !byId.has(parentId)) return false;
   let current = byId.get(parentId);
   const seen = new Set();
@@ -40,16 +43,23 @@ export function canNest(nodes, childId, parentId) {
   return true;
 }
 
-export function reparentCard(nodes, childId, parentId) {
-  const byId = new Map(nodes.map((node) => [node.id, node]));
+export function canNest(nodes, childId, parentId) {
+  return canNestInIndex(createHierarchyIndex(nodes), childId, parentId);
+}
+
+// UI stacks children and expands ancestors; the CLI preserves its existing
+// parent-relative coordinates unless a caller explicitly requests placement.
+export function reparentCard(nodes, childId, parentId, { placement = 'stack' } = {}) {
+  if (!['stack', 'keep-relative'].includes(placement)) throw new Error('Invalid card placement');
+  const byId = createHierarchyIndex(nodes);
   const child = byId.get(childId);
-  if (!child || !canNest(nodes, childId, parentId))
+  if (!child || !canNestInIndex(byId, childId, parentId))
     throw new Error("Invalid card parent");
-  if ((child.parentId || "") === (parentId || "")) return nodes;
+  if (placement === 'stack' && (child.parentId || "") === (parentId || "")) return nodes;
   const absolute = absolutePosition(child, byId);
-  let newPosition = absolute;
+  let newPosition = placement === 'keep-relative' ? child.position : absolute;
   const updated = new Map(nodes.map((node) => [node.id, node]));
-  if (parentId) {
+  if (parentId && placement === 'stack') {
     const parent = byId.get(parentId);
     const siblings = nodes.filter(
       (node) => node.parentId === parentId && node.id !== childId,
@@ -80,7 +90,8 @@ export function reparentCard(nodes, childId, parentId) {
       current = current.parentId ? byId.get(current.parentId) : null;
     }
   }
-  const { parentId: _oldParent, extent: _extent, ...rest } = child;
+  const { parentId: _oldParent, ...rest } = child;
+  if (placement === 'stack') delete rest.extent;
   updated.set(childId, {
     ...rest,
     position: newPosition,

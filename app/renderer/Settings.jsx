@@ -1,13 +1,20 @@
 import React from "react";
+import { ShortcutSettings } from './ShortcutSettings.jsx';
 export function Settings({
   theme,
   onThemeChange,
   vimEnabled,
   onToggleVim,
   disabled,
+  layout,
+  onLayoutChange,
+  bindings,
+  defaultBindings,
+  onBindingsChange,
+  onFocus,
 }) {
   return (
-    <div className="settings-page">
+    <div className="settings-page" onPointerDownCapture={onFocus} onFocusCapture={onFocus}>
       <div className="settings-content">
         <div className="settings-eyebrow">PREFERENCES</div>
         <h1>Settings</h1>
@@ -54,7 +61,15 @@ export function Settings({
               onChange={onToggleVim}
             />
           </label>
+          <label className="setting-line"><span><strong>Code minimap</strong><small>Show the overview in the code editor.</small></span>
+            <input type="checkbox" checked={layout.editorMinimap} disabled={disabled} onChange={e => onLayoutChange({editorMinimap:e.target.checked})} /></label>
         </section>
+        <section className="settings-section">
+          <h2>Board</h2>
+          <label className="setting-line"><span><strong>Board minimap</strong><small>Show a small overview of the board.</small></span>
+            <input type="checkbox" checked={layout.boardMinimap} disabled={disabled} onChange={e => onLayoutChange({boardMinimap:e.target.checked})} /></label>
+        </section>
+        <ShortcutSettings bindings={bindings} defaultBindings={defaultBindings} onChange={onBindingsChange} disabled={disabled} />
       </div>
     </div>
   );

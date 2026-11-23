@@ -1,0 +1,11 @@
+{
+  "open-project": {"label":"Open folder", "default":"Mod+KeyO"},
+  "open-settings": {"label":"Open settings", "default":"Mod+Comma"},
+  "save": {"label":"Save current view", "default":"Mod+KeyS"},
+  "toggle-sidebar": {"label":"Toggle sidebar", "default":"Mod+KeyB"},
+  "toggle-terminal": {"label":"Toggle terminal", "default":"Control+Backquote"},
+  "toggle-minimap": {"label":"Toggle minimap", "default":"Mod+Shift+KeyM"},
+  "go-definition": {"label":"Go to definition", "default":"F12"},
+  "split-view": {"label":"Split view or terminal", "default":"Mod+KeyD"},
+  "new-tab": {"label":"New tab", "default":"Mod+KeyT"}
+}

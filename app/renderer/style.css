@@ -42,6 +42,11 @@ aside {
   color: var(--sidebarFg);
   padding: 8px 0;
 }
+.splitter { position: relative; z-index: 5; flex: 0 0 5px; touch-action: none; background: var(--border); outline: none; }
+.splitter:hover, .splitter:focus-visible { background: var(--focus); }
+.splitter-vertical { cursor: col-resize; }
+.splitter-horizontal { cursor: row-resize; }
+.sidebar-toggle { align-self: center; flex: 0 0 auto; }
 aside h3 {
   font-size: 13px;
   margin: 0;
@@ -124,6 +129,13 @@ aside p {
   display: flex;
   flex-direction: column;
 }
+.work-views { flex:1; min-height:0; min-width:0; }
+.work-views > .content { min-width:0; }
+.work-views.split-board > .content + .content { border-left:1px solid var(--border); }
+.code-columns { display:flex; flex:1; min-height:0; min-width:0; }
+.code-pane { display:flex; flex:1; min-width:0; min-height:0; flex-direction:column; }
+.code-pane + .code-pane { border-left:1px solid var(--border); }
+.empty-code-pane { padding:18px; color:var(--sidebarFg); }
 nav {
   height: 39px;
   background: var(--chrome);
@@ -133,6 +145,28 @@ nav {
 nav button {
   border: 0;
   border-radius: 0;
+}
+.workspace-tab {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.workspace-tab button {
+  background: transparent;
+}
+.workspace-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-tab .workspace-tab-close {
+  padding: 4px 8px;
+  font-size: 16px;
+  flex: 0 0 auto;
+}
+.reopen-board {
+  margin: 8px;
 }
 .active {
   background: var(--tab);
@@ -155,7 +189,10 @@ nav button {
   padding: 5px 10px;
   background: var(--panel);
   color: var(--fg);
+  overflow-x: auto;
+  white-space: nowrap;
 }
+.toolbar > * { flex-shrink: 0; }
 .toolbar button {
   background: var(--panel);
   color: var(--fg);
@@ -169,7 +206,7 @@ nav button {
 }
 .card {
   height: 100%;
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--border);
   border-top: 4px solid var(--focus);
   border-radius: 7px;
@@ -189,6 +226,65 @@ nav button {
   background: transparent;
   outline: none;
 }
+.card-view-title, .card-view-body {
+  white-space: pre-wrap;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  user-select: none;
+}
+.card-html-preview {
+  flex: 1;
+  min-height: 20px;
+  width: 100%;
+  border: 0;
+  background: white;
+  pointer-events: none;
+}
+.board-command { display: flex; align-items: center; }
+.board-command input { width: 150px; color: var(--fg); background: var(--bg); }
+.conflict-overlay { position: fixed; inset: 0; z-index: 10000; background: #000a; display: grid; place-items: center; padding: 24px; }
+.conflict-dialog { background: var(--panel); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; width: min(1100px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 35px #0008; }
+.conflict-dialog header, .conflict-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; }
+.conflict-dialog h2, .conflict-dialog h3, .conflict-dialog h4, .conflict-dialog p { margin: 4px 0; }
+.conflict-list { overflow: auto; padding: 0 18px; }
+.conflict-item { border: 1px solid var(--border); border-radius: 4px; margin: 12px 0; padding: 12px; }
+.conflict-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.conflict-item pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 200px; overflow: auto; background: var(--bg); padding: 8px; }
+.conflict-diff span { display: block; min-height: 1em; }
+.conflict-diff .diff-draft { background: #8b303a77; }
+.conflict-diff .diff-saved { background: #227a4577; }
+.conflict-item textarea { display: block; width: 100%; min-height: 50px; background: var(--bg); color: var(--fg); }
+.conflict-item button[aria-pressed="true"] { outline: 2px solid var(--focus); }
+.conflict-status { color: var(--fg); }
+.card-view-body {
+  flex: 1;
+  min-height: 20px;
+}
+.markdown-card { white-space: normal; line-height: 1.4; }
+.markdown-card > :first-child { margin-top: 0; }
+.markdown-card > :last-child { margin-bottom: 0; }
+.markdown-card h1, .markdown-card h2, .markdown-card h3, .markdown-card h4 { line-height: 1.2; margin: .5em 0 .25em; }
+.markdown-card h1 { font-size: 1.35em; }
+.markdown-card h2 { font-size: 1.2em; }
+.markdown-card h3, .markdown-card h4 { font-size: 1.05em; }
+.markdown-card p, .markdown-card ul, .markdown-card ol, .markdown-card pre, .markdown-card blockquote { margin: .35em 0; }
+.markdown-card ul, .markdown-card ol { padding-left: 1.5em; }
+.markdown-card code, .markdown-card pre { font-family: ui-monospace, monospace; }
+.markdown-card code { color: var(--symbol); }
+.markdown-card pre { padding: .4em; overflow: hidden; background: var(--bg); white-space: pre-wrap; }
+.markdown-card blockquote { border-left: 3px solid var(--border); padding-left: .6em; }
+.markdown-card img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+.markdown-card table { border-collapse: collapse; }
+.markdown-card th, .markdown-card td { border: 1px solid var(--border); padding: .15em .35em; }
+.markdown-card a { color: var(--focus); }
+.card-overview { border-width: 2px; border-radius: 2px; padding: 0; }
+.card-overview .react-flow__handle { opacity: 0; }
+.react-flow__minimap { background: var(--panel); border: 1px solid var(--border); }
+.settings-section-header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+.shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.shortcut-actions { display: flex; gap: 6px; }
+.shortcut-actions button[aria-pressed='true'] { outline: 2px solid var(--focus); }
+.settings-error { color: var(--error) !important; margin-top: 8px !important; }
 .card .title {
   font-weight: 700;
 }
@@ -220,7 +316,16 @@ nav button {
   min-height: 100px;
   overflow: hidden;
   background: var(--terminal);
+  flex-direction: column;
 }
+.terminal-tabs { display:flex; flex:0 0 28px; align-items:center; background:var(--panel); overflow-x:auto; }
+.terminal-tabs button { border:0; border-radius:0; padding:3px 8px; white-space:nowrap; }
+.terminal-tab { display:flex; align-items:center; }
+.terminal-tab-content { flex:1; min-height:0; min-width:0; }
+.terminal-panes { height:100%; min-width:0; }
+.terminal-pane { flex:1; min-width:0; position:relative; border-right:1px solid var(--border); }
+.terminal-content { width:100%; height:100%; }
+.terminal-pane-close { position:absolute; top:0; right:0; z-index:2; padding:1px 5px; opacity:.6; }
 .terminal .xterm {
   height: 100%;
   padding: 8px;

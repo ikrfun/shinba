@@ -228,3 +228,7 @@ dist/
 
 # Packaged desktop applications
 release/
+
+# Local board drafts
+.shinba/sessions/
+.shinba/boards/.main.lock/
