@@ -23,7 +23,7 @@ function lineDiff(left, right) {
 function DiffText({ lines, side }) {
   return <pre className="conflict-diff">{lines.map((line,index) => <span key={index} className={line.changed ? `diff-${side}` : undefined}>{line.text}{'\n'}</span>)}</pre>;
 }
-export function BoardConflicts({ conflict, busy, onCancel, onSave }) {
+export function BoardConflicts({ conflict, busy, onCancel, onSave, kind = 'board' }) {
   const [choices, setChoices] = useState({});
   const [custom, setCustom] = useState({});
   const [error, setError] = useState('');
@@ -45,25 +45,25 @@ export function BoardConflicts({ conflict, busy, onCancel, onSave }) {
           : { choice };
       }
       setError('');
-      onSave({ current: conflict.current, choices: resolutions });
+      onSave({ current: conflict.current, working: conflict.working, choices: resolutions });
     } catch (e) { setError(`The edited value must be valid JSON: ${e.message}`); }
   };
   return <div className="conflict-overlay" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
     <div className="conflict-dialog">
-      <header><div><h2 id="conflict-title">Resolve board conflicts</h2>
-        <p>Review each change. The board will be checked again when you save.</p></div>
+      <header><div><h2 id="conflict-title">Resolve {kind} conflicts</h2>
+        <p>Review each change. The saved version will be checked again when you save.</p></div>
         <button onClick={onCancel} disabled={busy}>Close</button></header>
       <div className="conflict-list">
         {conflict.conflicts.map(item => {
           const [left,right] = lineDiff(display(item.working),display(item.current));
           return <section className="conflict-item" key={item.key}>
-            <h3>{item.path.join(' / ') || 'Board'}</h3>
+            <h3>{item.path.join(' / ') || (kind === 'board' ? 'Board' : 'File')}</h3>
             {item.reason && <p role="alert">{item.reason}. Review the entire board before choosing a version.</p>}
             <details><summary>Base</summary><pre>{display(item.base)}</pre></details>
             <div className="conflict-columns">
               <div><h4>Your draft</h4><DiffText lines={left} side="draft" />
                 <button disabled={busy} aria-pressed={choices[item.key] === 'working'} onClick={() => choose(item.key, 'working')}>Keep draft</button></div>
-              <div><h4>Saved board</h4><DiffText lines={right} side="saved" />
+              <div><h4>Saved {kind}</h4><DiffText lines={right} side="saved" />
                 <button disabled={busy} aria-pressed={choices[item.key] === 'current'} onClick={() => choose(item.key, 'current')}>Keep saved</button></div>
             </div>
             <button disabled={busy} aria-pressed={choices[item.key] === 'custom'} onClick={() => edit(item)}>Edit result</button>
@@ -75,7 +75,7 @@ export function BoardConflicts({ conflict, busy, onCancel, onSave }) {
         })}
       </div>
       <footer>{error && <span role="alert">{error}</span>}<span>{Object.keys(choices).length} / {conflict.conflicts.length} resolved</span>
-        <button disabled={!complete || busy} onClick={submit}>Save resolved board</button></footer>
+        <button disabled={!complete || busy} onClick={submit}>Save resolved {kind}</button></footer>
     </div>
   </div>;
 }

@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld("shinba", {
   tree: (p) => ipcRenderer.invoke("project:tree", p),
   read: (p) => ipcRenderer.invoke("file:read", p),
   readImage: (p) => ipcRenderer.invoke('file:read-image', p),
-  write: (p, t, expected) => ipcRenderer.invoke("file:write", p, t, expected),
+  write: (p, t, expected, resolution) => ipcRenderer.invoke("file:write", p, t, expected, resolution),
   saveAs: (text) => ipcRenderer.invoke('file:save-as', text),
   discardUntitled: (label) => ipcRenderer.invoke('file:discard-untitled', label),
   load: () => ipcRenderer.invoke("board:load"),

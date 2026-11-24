@@ -1,6 +1,6 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { readBoard } = require('../cli/board.cjs');
+const { readBoard, mergeValues, applicableChoices } = require('../cli/board.cjs');
 const sessions = require('../cli/sessions.cjs');
 function registerStorage({ ipcMain, inside }) {
   ipcMain.handle('project:tree', async (_e, dir = '') => {
@@ -25,11 +25,16 @@ function registerStorage({ ipcMain, inside }) {
     if (!info.isFile() || info.size > 10 * 1024 * 1024) throw new Error('Image is too large or not a file');
     return `data:${mime};base64,${(await fs.readFile(target)).toString('base64')}`;
   });
-  ipcMain.handle('file:write', async (_e, file, text, expected) => {
+  ipcMain.handle('file:write', async (_e, file, text, expected, resolution) => {
     const target = inside(file);
     const current = await fs.readFile(target, 'utf8');
-    if (current !== expected) throw new Error('The file was changed externally. Saving was stopped.');
-    await fs.writeFile(target, text, 'utf8');
+    const choices = resolution?.working === text ? applicableChoices(resolution, current) : {};
+    const result = mergeValues(expected, text, current, choices);
+    if (result.conflicts.length) return { saved: false, current, working: text, conflicts: result.conflicts, priorChoices: choices };
+    // Check again immediately before writing, including after a reviewed resolution.
+    if (await fs.readFile(target, 'utf8') !== current) return { saved: false, retry: true };
+    await fs.writeFile(target, result.value, 'utf8');
+    return { saved: true, text: result.value };
   });
   ipcMain.handle('board:load', async () => readBoard(inside('.shinba/boards/main.json')));
   ipcMain.handle('board:draft-begin', async (_e, board) => sessions.begin(inside(), board));

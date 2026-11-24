@@ -516,6 +516,7 @@ function App() {
           />
         </section>
       </main>
+      <BoardConflicts kind="file" conflict={documents.conflict} busy={documents.busy} onCancel={documents.cancelConflict} onSave={documents.resolve} />
       <BoardConflicts conflict={board.conflict} busy={board.busy} onCancel={() => board.setConflict(null)} onSave={board.commit} />
       <footer>{message}</footer>
     </>

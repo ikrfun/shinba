@@ -13,7 +13,7 @@ const withoutRevision = board => {
 };
 
 // Node and edge arrays are merged by stable ID, other arrays as whole values.
-function mergeBoard(base, working, current, resolutions = {}) {
+function mergeValues(base, working, current, resolutions = {}) {
   const conflicts = [];
   function visit(b, w, c, location) {
     if (equal(w, c)) return w;
@@ -44,7 +44,14 @@ function mergeBoard(base, working, current, resolutions = {}) {
     conflicts.push({ path: location, key, base: wrapped(b), working: wrapped(w), current: wrapped(c) });
     return w;
   }
-  return { board: visit(base, working, current, []), conflicts };
+  return { value: visit(base, working, current, []), conflicts };
+}
+function mergeBoard(base, working, current, resolutions = {}) {
+  const result = mergeValues(base, working, current, resolutions);
+  return { board: result.value, conflicts: result.conflicts };
+}
+function applicableChoices(resolution, current) {
+  return resolution && equal(resolution.current, current) ? resolution.choices : {};
 }
 async function readJson(file) { return JSON.parse(await fs.readFile(file, 'utf8')); }
 async function readBoard(file) {
@@ -123,7 +130,7 @@ function validate(board) {
 async function saveBoard(boardFile, base, working, resolution) {
   validate(base); validate(working);
   const current = await readBoard(boardFile);
-  const choices = resolution && equal(resolution.current, current) ? resolution.choices : {};
+  const choices = applicableChoices(resolution, current);
   const b = withoutRevision(base), w = withoutRevision(working), c = withoutRevision(current);
   const result = mergeBoard(b, w, c, choices);
   if (result.conflicts.length) return { saved: false, conflicts: result.conflicts, current, priorChoices: choices };
@@ -144,4 +151,4 @@ async function saveBoard(boardFile, base, working, resolution) {
   await writeJson(boardFile, board);
   return { saved: true, board };
 }
-module.exports = { mergeBoard, readJson, readBoard, writeJson, withLock, validate, saveBoard, emptyBoard, withoutRevision };
+module.exports = { mergeValues, applicableChoices, mergeBoard, readJson, readBoard, writeJson, withLock, validate, saveBoard, emptyBoard, withoutRevision };

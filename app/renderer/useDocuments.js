@@ -5,13 +5,21 @@ const api = window.shinba;
 export function useDocuments(setMessage) {
   const records = useRef(new Map()), pendingReads = useRef(new Map()), nextUntitled = useRef(1), generation = useRef(0);
   const [, render] = useState(0);
+  const [conflict, setConflict] = useState(null), [busy, setBusy] = useState(false);
   const notify = () => render(value => value + 1);
   const all = () => [...records.current.values()];
   function create(path, text) {
     const doc = { id:crypto.randomUUID(), path, label:path || `Untitled-${nextUntitled.current++}`, text, saved:text, dirty:false, saving:false };
     doc.saver = createAutosave(async snapshot => {
-      await api.write(snapshot.path, snapshot.text, doc.saved);
-      doc.saved = snapshot.text;
+      let result;
+      do { result = await api.write(snapshot.path, snapshot.text, doc.saved, doc.resolution); } while (result.retry);
+      doc.resolution = null;
+      if (!result.saved) {
+        setConflict({ ...result, id: doc.id });
+        throw new Error('Resolve the file conflict before saving');
+      }
+      doc.saved = result.text;
+      if (doc.text === snapshot.text) doc.text = result.text;
     }, (status,error) => {
       doc.dirty = status !== 'saved' || doc.text !== doc.saved;
       if (status === 'error') setMessage(`Failed to save ${doc.label}: ${error.message}`);
@@ -66,7 +74,19 @@ export function useDocuments(setMessage) {
     }
     return true;
   }
-  function clear(){generation.current++;records.current.clear();pendingReads.current.clear();notify();}
-  return { all, get:id=>records.current.get(id), open, createUntitled:()=>create(null,''), change, save, close, prepareProjectSwitch, clear,
+  async function resolve(resolution) {
+    const doc = records.current.get(conflict?.id);
+    if (!doc || busy) return;
+    setBusy(true);
+    try {
+      doc.resolution = resolution;
+      doc.saver.schedule({ path: doc.path, text: doc.text });
+      await doc.saver.flush();
+      setConflict(null);
+    } catch (error) { setMessage(`Could not save ${doc.label}: ${error.message}`); }
+    finally { setBusy(false); }
+  }
+  function clear(){generation.current++;records.current.clear();pendingReads.current.clear();setConflict(null);notify();}
+  return { conflict, busy, resolve, cancelConflict: () => setConflict(null), all, get:id=>records.current.get(id), open, createUntitled:()=>create(null,''), change, save, close, prepareProjectSwitch, clear,
     hasPending:()=>all().some(doc=>doc.saver.hasChanges() || (!doc.path && doc.dirty) || doc.saving) };
 }
