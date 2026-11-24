@@ -31,6 +31,9 @@ export const themes = {
     monaco: "vs-dark",
     grid: "#454545",
     symbol: "#b180d7",
+    gitModified: "#89d185",
+    gitUnpushed: "#e2c46d",
+    gitIgnored: "#858585",
   },
   light: {
     colors: {
@@ -63,6 +66,9 @@ export const themes = {
     monaco: "vs",
     grid: "#d2d2d2",
     symbol: "#7c4a98",
+    gitModified: "#237c2c",
+    gitUnpushed: "#8a6500",
+    gitIgnored: "#8a8a8a",
   },
 };
 const map = {
@@ -99,5 +105,5 @@ export function themeVariables(theme) {
       theme.colors[value],
     ]),
   );
-  return { ...vars, "--grid": theme.grid, "--symbol": theme.symbol };
+  return { ...vars, "--grid": theme.grid, "--symbol": theme.symbol, "--git-modified": theme.gitModified, "--git-unpushed": theme.gitUnpushed, "--git-ignored": theme.gitIgnored };
 }

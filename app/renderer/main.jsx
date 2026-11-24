@@ -36,6 +36,7 @@ function App() {
   const [project, setProject] = useState(null),
     [active, setActive] = useState("board"),
     [boardOpen, setBoardOpen] = useState(true),
+    [settingsOpen, setSettingsOpen] = useState(true),
     [primaryDoc, setPrimaryDoc] = useState(null),
     [secondaryDoc, setSecondaryDoc] = useState(null),
     [focusedPane, setFocusedPane] = useState('primary'),
@@ -72,6 +73,9 @@ function App() {
   const currentDocId = focusedPane === 'secondary' && editorSplit ? secondaryDoc : primaryDoc;
   const currentDoc = documents.get(currentDocId);
   const { nodes, setNodes } = board;
+  useEffect(() => {
+    if (active === 'settings') setSettingsOpen(true);
+  }, [active]);
   useEffect(() => {
     const resize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', resize);
@@ -190,7 +194,7 @@ function App() {
     () =>
       api.onShortcut((action) => {
         if (action === "open-project") shortcutHandlers.current.openProject();
-        if (action === "open-settings") setActive("settings");
+        if (action === "open-settings") { setSettingsOpen(true); setActive("settings"); }
         if (action === "toggle-terminal") {
           if (shortcutHandlers.current.project) setTerminal((value) => !value);
           else setMessage("Open a folder first");
@@ -461,12 +465,12 @@ function App() {
                       setActive(documentList.length ? "code" : "settings");
                   }} />
             )}
-            <button
-              onClick={() => setActive("settings")}
-              className={active === "settings" ? "active" : ""}
-            >
-              Settings
-            </button>
+            {settingsOpen && <WorkspaceTab label="Settings" active={active === "settings"}
+              onSelect={() => setActive("settings")}
+              onClose={() => {
+                setSettingsOpen(false);
+                if (active === "settings") setActive(boardOpen ? "board" : documentList.length ? "code" : "empty");
+              }} />}
             {documentList.map(doc => <WorkspaceTab key={doc.id} label={doc.label} active={active === 'code' && currentDocId === doc.id} dirty={doc.dirty}
               onSelect={() => { if (editorSplit && paneRef.current === 'secondary') setSecondaryDoc(doc.id); else setPrimaryDoc(doc.id); setActive('code'); }}
               onClose={() => closeFile(doc.id)} closeDisabled={closingFile === doc.id || doc.saving} />)}

@@ -111,6 +111,14 @@ aside p {
 .tree-row .symbol-icon {
   color: var(--symbol);
 }
+.tree-row[data-decoration="modified"] .tree-label,
+.tree-row[data-decoration="modified"] .codicon:not(.tree-expander .codicon) { color: var(--git-modified); }
+.tree-row[data-decoration="unpushed"] .tree-label,
+.tree-row[data-decoration="unpushed"] .codicon:not(.tree-expander .codicon) { color: var(--git-unpushed); }
+.tree-row[data-decoration="error"] .tree-label,
+.tree-row[data-decoration="error"] .codicon:not(.tree-expander .codicon) { color: var(--error); }
+.tree-row[data-decoration="ignored"] .tree-label,
+.tree-row[data-decoration="ignored"] .codicon:not(.tree-expander .codicon) { color: var(--git-ignored); }
 .tree-label {
   min-width: 0;
   overflow: hidden;
@@ -123,6 +131,7 @@ aside p {
   padding: 4px 8px 4px 23px;
   overflow-wrap: anywhere;
 }
+.tree-git-note { padding: 3px 12px; font-size: 11px; color: var(--sidebarFg); }
 .workspace {
   flex: 1;
   min-width: 0;

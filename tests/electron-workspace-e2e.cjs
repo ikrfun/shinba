@@ -4,6 +4,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
+const gitStatus = require('../app/main/git-status.cjs');
 const { registerStorage } = require('../app/main/storage.cjs');
 const { registerSettings } = require('../app/main/settings.cjs');
 const { defaults, matchAction } = require('../app/main/keybindings.cjs');
@@ -38,7 +40,15 @@ async function run(){
  await fs.writeFile(path.join(project,'sample.txt'),'example file');
  await fs.writeFile(path.join(project,'pixel.png'),Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64'));
  await writeJson(boardFile,{id:'main',name:'Main',schemaVersion:1,revision:1,nodes:[{id:'a',type:'card',position:{x:0,y:0},data:{title:'Markdown',body:'# Heading\n\n- item **bold**\n\n![pixel](pixel.png)\n\n```js\nconst x = 1\n```\n<script>window.pwned=1</script>\n<img src="x" onerror="window.pwned=2">\n[unsafe](javascript:alert(1))'},style:{width:380,height:350}},{id:'b',type:'card',position:{x:650,y:50},data:{title:'Second',body:'Notes'},style:{width:260,height:200}}],edges:[{id:'a-b',source:'a',target:'b'}]});
+ const git = (...args) => execFileSync('git', ['-C', project, ...args], { stdio: 'pipe' });
+ git('init', '-q'); git('config', 'user.email', 'test@example.com'); git('config', 'user.name', 'Test');
+ git('add', '.'); git('commit', '-qm', 'initial');
+ await fs.mkdir(path.join(project, 'pending')); await fs.writeFile(path.join(project, 'pending', 'new.txt'), 'new');
+ await fs.writeFile(path.join(project, '.gitignore'), 'build/\n');
+ await fs.mkdir(path.join(project, 'build')); await fs.writeFile(path.join(project, 'build', 'output.txt'), 'generated');
  registerStorage({ipcMain,inside:(p='')=>path.join(project,p)});
+ ipcMain.handle('git:status', () => gitStatus.status(project));
+ ipcMain.handle('git:file-ranges', (_event, file, state) => gitStatus.fileRanges(project, file, state));
  const settings=registerSettings({app:{getPath:()=>path.join(root,'settings')},ipcMain,onKeybindingsChanged:next=>{activeBindings=next;}});
  ipcMain.handle('shortcuts:capture',(_e,value)=>{capturing=value;});
  ipcMain.handle('project:open',()=>({name:'project',path:project}));
@@ -51,6 +61,8 @@ async function run(){
  await win.loadFile(path.resolve('dist/index.html'));
  win.webContents.send('shortcut','open-project');
  await waitFor("!!document.querySelector('.markdown-card h1')",'Markdown card');
+ await waitFor("[...document.querySelectorAll('.tree-row')].some(row => row.textContent.includes('pending') && row.dataset.decoration === 'modified')",'uncommitted directory decoration');
+ await waitFor("[...document.querySelectorAll('.tree-row')].some(row => row.textContent.includes('build') && row.dataset.decoration === 'ignored')",'ignored directory decoration');
  await waitFor("document.querySelectorAll('.react-flow__edge').length === 1",'initial connection');
  assert.equal(await js("document.querySelector('.markdown-card h1').textContent"),'Heading');
  assert.equal(await js("document.querySelector('.markdown-card li strong').textContent"),'bold');
@@ -120,8 +132,13 @@ async function run(){
  await key('S',['meta']);
  for(let i=0;i<5;i++){if((await fs.readFile(path.join(project,'sample.txt'),'utf8')).includes('updated'))break;await pause(50);}
  assert.match(await fs.readFile(path.join(project,'sample.txt'),'utf8'),/updated/);
- assert.equal(await js("document.querySelectorAll('nav .workspace-tab').length"),2);
+ assert.equal(await js("document.querySelectorAll('nav .workspace-tab').length"),3);
  assert.equal(await js("!!document.querySelector('nav .workspace-tab [aria-label=\"Close Board\"]') && !!document.querySelector('nav .workspace-tab [aria-label=\"Close sample.txt\"]')"),true);
+ await js("document.querySelector('[aria-label=\"Close Settings\"]').click()");
+ assert.equal(await js("!!document.querySelector('[aria-label=\"Close Settings\"]')"),false);
+ win.webContents.send('shortcut','open-settings');
+ await waitFor("!!document.querySelector('[aria-label=\"Close Settings\"]') && !!document.querySelector('.settings-page')",'reopen Settings');
+ await js("[...document.querySelectorAll('nav .workspace-tab-label')].find(x=>x.textContent==='sample.txt').click()");
  // A conflict during the close leaves the tab and its unsaved contents intact.
  const previous=await fs.readFile(path.join(project,'sample.txt'),'utf8');
  await js(`(() => { const ec=document.querySelector('.native-edit-context').editContext; const start=ec.selectionStart, end=ec.selectionEnd, text=' retained'; ec.dispatchEvent(new TextUpdateEvent('textupdate',{updateRangeStart:start,updateRangeEnd:end,text,selectionStart:start+text.length,selectionEnd:start+text.length})); })()`);

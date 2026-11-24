@@ -7,6 +7,7 @@ const { defaults, matchAction } = require("./keybindings.cjs");
 const { registerStorage } = require("./storage.cjs");
 const { createLanguageService } = require("./language-service.cjs");
 const { registerTerminal } = require('./terminal-manager.cjs');
+const gitStatus = require('./git-status.cjs');
 let root = null,
   win,
   boardWatcher = null;
@@ -83,6 +84,8 @@ ipcMain.handle("project:open", async () => {
   return { name: path.basename(root), path: root };
 });
 registerStorage({ ipcMain, inside });
+ipcMain.handle('git:status', () => gitStatus.status(inside()));
+ipcMain.handle('git:file-ranges', (_event, file, state) => gitStatus.fileRanges(inside(), file, state));
 ipcMain.handle('file:save-as', async (_event, text) => {
   if (typeof text !== 'string') throw new Error('Invalid file content');
   const result = await dialog.showSaveDialog(win, { defaultPath: path.join(inside(), 'untitled.txt'), properties:['showOverwriteConfirmation','createDirectory'] });

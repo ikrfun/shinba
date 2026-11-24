@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "@vscode/codicons/dist/codicon.css";
+import { entryDecoration, symbolDecoration, decorationLabel } from './treeDecorations.js';
 
 const api = window.shinba;
 const supportsSymbols = (path) => /\.(ts|tsx|js|jsx|cjs|mjs)$/.test(path);
@@ -86,7 +87,7 @@ async function compactDirectory(entry) {
   return { ...entry, path, name };
 }
 
-function Symbols({ items, file, onSymbol, selectedSymbol }) {
+function Symbols({ items, file, onSymbol, selectedSymbol, ranges }) {
   return (
     <ul className="tree-children">
       {items.map((item, index) => {
@@ -96,12 +97,14 @@ function Symbols({ items, file, onSymbol, selectedSymbol }) {
           selectedSymbol?.path === file &&
           selectedSymbol?.name === item.name &&
           selectedSymbol?.range?.start?.line === range?.start?.line;
+        const state = symbolDecoration(ranges, item);
         return (
           <li key={`${item.name}-${index}`}>
             <button
               className={`tree-row symbol-row${selected ? " is-selected" : ""}`}
+              data-decoration={state}
               onClick={() => onSymbol(file, item)}
-              title={`${type}: ${item.name}`}
+              title={`${type}: ${item.name}${state ? ` — ${decorationLabel[state]}` : ''}`}
             >
               <span className="tree-expander" />
               <Icon
@@ -116,6 +119,7 @@ function Symbols({ items, file, onSymbol, selectedSymbol }) {
                 file={file}
                 onSymbol={onSymbol}
                 selectedSymbol={selectedSymbol}
+                ranges={ranges}
               />
             )}
           </li>
@@ -125,18 +129,30 @@ function Symbols({ items, file, onSymbol, selectedSymbol }) {
   );
 }
 
-export function Tree({
+function TreeEntries({
   path = "",
   onFile,
   onSymbol,
   refresh,
   selectedFile,
   selectedSymbol,
+  git,
 }) {
   const [entries, setEntries] = useState([]);
   const [expanded, setExpanded] = useState({});
   const [symbols, setSymbols] = useState({});
   const [errors, setErrors] = useState({});
+  const [diffRanges, setDiffRanges] = useState({});
+  useEffect(() => {
+    let alive = true;
+    for (const file of Object.keys(expanded)) {
+      if (!expanded[file] || !symbols[file]) continue;
+      const state = git.files?.[file] || {};
+      if (!state.modified && !state.unpushed) { setDiffRanges(current => ({ ...current, [file]: {} })); continue; }
+      api.gitFileRanges(file, state).then(result => { if (alive) setDiffRanges(current => ({ ...current, [file]: result })); }).catch(() => {});
+    }
+    return () => { alive = false; };
+  }, [expanded, symbols, git]);
   useEffect(() => {
     let active = true;
     api
@@ -174,12 +190,14 @@ export function Tree({
       {entries.map((entry) => {
         const isOpen = Boolean(expanded[entry.path]);
         const expandable = entry.directory || supportsSymbols(entry.path);
+        const state = entryDecoration(git.files, entry);
         return (
           <li key={entry.path}>
             <button
               className={`tree-row${!entry.directory && selectedFile === entry.path ? " is-selected" : ""}`}
+              data-decoration={state}
               onClick={() => toggle(entry)}
-              title={entry.path}
+              title={`${entry.path}${state ? ` — ${decorationLabel[state]}` : ''}`}
               aria-expanded={expandable ? isOpen : undefined}
             >
               <span className="tree-expander">
@@ -201,13 +219,14 @@ export function Tree({
             </button>
             {isOpen &&
               (entry.directory ? (
-                <Tree
+                <TreeEntries
                   path={entry.path}
                   onFile={onFile}
                   onSymbol={onSymbol}
                   refresh={refresh}
                   selectedFile={selectedFile}
                   selectedSymbol={selectedSymbol}
+                  git={git}
                 />
               ) : (
                 <>
@@ -220,6 +239,7 @@ export function Tree({
                       file={entry.path}
                       onSymbol={onSymbol}
                       selectedSymbol={selectedSymbol}
+                      ranges={diffRanges[entry.path]}
                     />
                   )}
                 </>
@@ -229,4 +249,29 @@ export function Tree({
       })}
     </ul>
   );
+}
+
+export function Tree(props) {
+  const [git, setGit] = useState({ files: {} });
+  useEffect(() => {
+    let active = true, running = false;
+    const refreshGit = async () => {
+      if (running) return;
+      running = true;
+      try {
+        const next = await api.gitStatus();
+        if (active) setGit(next);
+      } catch { if (active) setGit(current => current.error ? current : { available: false, error: true, files: {} }); }
+      finally { running = false; }
+    };
+    refreshGit();
+    const timer = setInterval(refreshGit, 5000);
+    window.addEventListener('focus', refreshGit);
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', refreshGit); };
+  }, [props.refresh]);
+  return <>
+    {git.available && !git.upstream && <div className="tree-git-note">Git: no upstream branch; unpushed changes unavailable</div>}
+    {git.error && <div className="tree-git-note">Git status unavailable</div>}
+    <TreeEntries {...props} git={git} />
+  </>;
 }

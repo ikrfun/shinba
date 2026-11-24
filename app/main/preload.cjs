@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("shinba", {
   open: () => ipcRenderer.invoke("project:open"),
   openExternal: (url) => ipcRenderer.invoke('external:open', url),
   tree: (p) => ipcRenderer.invoke("project:tree", p),
+  gitStatus: () => ipcRenderer.invoke('git:status'),
+  gitFileRanges: (file, state) => ipcRenderer.invoke('git:file-ranges', file, state),
   read: (p) => ipcRenderer.invoke("file:read", p),
   readImage: (p) => ipcRenderer.invoke('file:read-image', p),
   write: (p, t, expected, resolution) => ipcRenderer.invoke("file:write", p, t, expected, resolution),
